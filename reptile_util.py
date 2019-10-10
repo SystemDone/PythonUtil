@@ -32,12 +32,17 @@ class RequestHTML(object):
         # 图片前缀补零使用
         self.__name_length = 5
 
+    def set_url(self, url):
+        self.__url = url
+
     # get方式请求网页
-    def get_html(self):
+    def get_html(self, encoding=None):
         # get请求
         html = requests.get(self.__url, headers=self.header, cookies=self.__cookies)
         # 保存Cookie
-        self.__cookies = requests.cookies
+        self.__cookies = html.cookies
+        if encoding is not None:
+            html.encoding = encoding
         return html
 
     # post方式请求网页
