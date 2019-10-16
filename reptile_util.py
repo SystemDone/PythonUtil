@@ -46,11 +46,14 @@ class RequestHTML(object):
         return html
 
     # post方式请求网页
-    def post_html(self, data=None, json=None):
+    def post_html(self, data=None, json=None, url=None):
         # post请求
-        html = requests.post(self.__url, data=data, json=json, headers=self.header, cookies=self.__cookies)
+        if url is None:
+            html = requests.post(self.__url, data=data, json=json, headers=self.header, cookies=self.__cookies)
+        else:
+            html = requests.post(url, data=data, json=json, headers=self.header, cookies=self.__cookies)
         # 保存Cookie
-        self.__cookies = requests.cookies
+        self.__cookies = html.cookies
         return html
 
     # 保存文件到本地
