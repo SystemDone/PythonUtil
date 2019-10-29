@@ -169,3 +169,22 @@ class MysqlUtil(object):
         conn.close()
         self._SQL = ''
         return results
+
+database = {
+    'host': '127.0.0.1',
+    'user': 'root',
+    'password': '123456',
+    'database': 'test',
+    'charset': 'utf8'
+}
+
+data = {
+    'ID': '123',
+    'CONTENT': '测试数据',
+    'TYPE': '1',
+    'REMARK': '这是备注',
+    'DISABLED': 0
+}
+
+s = MysqlUtil(database).teble('userinfo').insert(data).excute()
+s = MysqlUtil(database).teble('userinfo').select().eq('ID', '123').excute()
