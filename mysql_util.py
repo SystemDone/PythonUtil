@@ -4,20 +4,32 @@ import pymysql
 class MysqlUtil(object):
 
     def __init__(self, database):
+        # 地址
         self._host = database['host']
+        # 账号
         self._user = database['user']
+        # 密码
         self._password = database['password']
+        # 数据库
         self._database = database['database']
+        # 默认编码utf-8
         if database['charset'] is None:
             self._charset = 'utf8'
         else:
             self._charset = database['charset']
+        # 表名
         self._tableName = ''
+        # SQL主体
         self._SQL = ''
+        # where条件部分
         self._query = ''
+        # 条件计数，为零时拼接条件前加where关键字，大于零时条件前加and关键字
         self._queryNum = 0
+        # 暂存执行语句方法
         self._excute = None
+        # 参数
         self._data = ''
+        # 字段名
         self._column = ''
 
     '''
@@ -49,8 +61,9 @@ class MysqlUtil(object):
         # 过滤非str类型字段，拼接sql
         other_data = ['{0}={1}'.format(k, v) for k, v in data.items() if type(v) is not str]
         self._data = ','.join(str_data + other_data)
+        print(self._data)
         # 拼接sql
-        self._SQL = 'UPDATE {teble} SET {data}'
+        self._SQL = 'UPDATE {table} SET ' + self._data
         # 暂存执行方法
         self._excute = self.__insert_excute
         return self
@@ -105,7 +118,7 @@ class MysqlUtil(object):
         data：值
     '''
     def eq(self, column, data):
-        return self.__query(column, '=', data)
+        return self.__compare_query(column, '=', data)
 
     '''
     功能：调用拼接条件的方法，传入运算符!=
@@ -114,7 +127,7 @@ class MysqlUtil(object):
         data：值
     '''
     def ne(self, column, data):
-        return self.__query(column, '!=', data)
+        return self.__compare_query(column, '!=', data)
 
     '''
     功能：调用拼接条件的方法，传入运算符>
@@ -123,7 +136,7 @@ class MysqlUtil(object):
         data：值
     '''
     def gt(self, column, data):
-        return self.__query(column, '>', data)
+        return self.__compare_query(column, '>', data)
 
     '''
     功能：调用拼接条件的方法，传入运算符<
@@ -132,7 +145,7 @@ class MysqlUtil(object):
         data：值
     '''
     def lt(self, column, data):
-        return self.__query(column, '<', data)
+        return self.__compare_query(column, '<', data)
 
     '''
     功能：调用拼接条件的方法，传入运算符>=
@@ -141,7 +154,7 @@ class MysqlUtil(object):
         data：值
     '''
     def ge(self, column, data):
-        return self.__query(column, '>=', data)
+        return self.__compare_query(column, '>=', data)
 
     '''
     功能：调用拼接条件的方法，传入运算符<=
@@ -150,7 +163,55 @@ class MysqlUtil(object):
         data：值
     '''
     def le(self, column, data):
-        return self.__query(column, '<=', data)
+        return self.__compare_query(column, '<=', data)
+
+    '''
+    功能：拼接IN条件
+    参数：
+        column：字段名
+        data：list类型
+    '''
+    def In(self, column, data):
+        return self.__In(column, 'IN', data)
+
+    '''
+    功能：拼接NOT IN条件
+    参数：
+        column：字段名
+        data：list类型
+    '''
+    def notIn(self, column, data):
+        return self.__In(column, 'NOT IN', data)
+
+    '''
+    功能：拼接OR条件
+    '''
+    def Or(self, data):
+        calculate = {
+            'eq': '=',
+            'gt': '>',
+            'lt': '<',
+            'ne': '!=',
+            'ge': '>=',
+            'le': '<=',
+            'in': 'IN',
+            'notin': 'NOT IN'
+        }
+        datas = []
+        for item in data:
+            if type(item['data']) is str:
+                item['data'] = '\'{0}\''.format(item['data'])
+            elif type(item['data']) is list:
+                item['data'] = str(item['data']).replace('[', "(").replace(']', ')')
+            else:
+                item['data'] = str(item['data'])
+            datas.append('{column} {calculate} {data}'.format(column=item['column'], data=item['data'], calculate=calculate[item['calculate'].lower()]))
+        if 0 == self._queryNum:
+            self._query = ' WHERE'
+        else:
+            self._query += ' AND'
+        self._query += ' ({data})'.format(data=' OR '.join(datas))
+        return self
 
     '''
     功能：可以通过这个方法执行自己编写的sql
@@ -194,6 +255,25 @@ class MysqlUtil(object):
         # 返回执行结果
         return obj
 
+    def __In(self, column, calculate, data):
+        # str_data = ['\'{0}\''.format(x) for x in data if type(x) is str]
+        # other_data = [str(x) for x in data if type(x) is not str]
+        # data = '({data})'.format(data=','.join(str_data + other_data))
+        data = str(data).replace('[', '(').replace(']', ')')
+        return self.__query(column, calculate, data)
+
+    '''
+    功能：封装比较运算条件的参数
+    参数：
+        column：字段名
+        calculate：运算符
+        data：值
+    '''
+    def __compare_query(self, column, calculate, data):
+        if type(data) is str:
+            data = '\'{0}\''.format(data)
+        return self.__query(column, calculate, data)
+
     '''
     功能：拼接查询条件
     参数：
@@ -202,8 +282,6 @@ class MysqlUtil(object):
         data：值
     '''
     def __query(self, column, calculate, data):
-        if type(data) is str:
-            data = '\'{0}\''.format(data)
         if 0 == self._queryNum:
             self._query = ' WHERE'
         else:
@@ -252,21 +330,23 @@ class MysqlUtil(object):
         conn.close()
         return results
 
-database = {
-    'host': '127.0.0.1',
-    'user': 'root',
-    'password': '123456',
-    'database': 'test',
-    'charset': 'utf8'
-}
-
-data = {
-    'ID': '123',
-    'CONTENT': '测试数据',
-    'TYPE': '1',
-    'REMARK': '这是备注',
-    'DISABLED': 0
-}
-
-s = MysqlUtil(database).teble('userinfo').insert(data).excute()
-s = MysqlUtil(database).teble('userinfo').select().ne('ID', '123').excute()
+# 示例
+# database = {
+#     'host': '127.0.0.1',
+#     'user': 'root',
+#     'password': '123456',
+#     'database': 'test',
+#     'charset': 'utf8'
+# }
+# data = {
+#     'ID': '123',
+#     'CONTENT': '测试数据',
+#     'TYPE': '1',
+#     'REMARK': '这是备注',
+#     'DISABLED': 0
+# }
+# s = MysqlUtil(database).teble('userinfo').insert(data).excute()
+# s = MysqlUtil(database).teble('userinfo').select().ne('ID', '123').In('TYPE', ['1', '2', '3']).notIn('TYPE', ['1', '2', '3']).excute()
+# d = [{'column': 'TYPE', 'data': '1', 'calculate': 'eq'}, {'column': 'TYPE', 'data': ['1', '2'], 'calculate': 'in'}]
+# s = MysqlUtil(database).teble('userinfo').select().ne('ID', '123').In('TYPE', [False, 2, '3']).Or(d).excute()
+# s = MysqlUtil(database).teble('userinfo').update(data).excute()
