@@ -36,7 +36,7 @@ class MysqlUtil(object):
     功能：暂存表名
     参数：表名
     '''
-    def teble(self, table):
+    def table(self, table):
         self._tableName = table
         return self
 
@@ -61,7 +61,6 @@ class MysqlUtil(object):
         # 过滤非str类型字段，拼接sql
         other_data = ['{0}={1}'.format(k, v) for k, v in data.items() if type(v) is not str]
         self._data = ','.join(str_data + other_data)
-        print(self._data)
         # 拼接sql
         self._SQL = 'UPDATE {table} SET ' + self._data
         # 暂存执行方法
@@ -218,6 +217,7 @@ class MysqlUtil(object):
     '''
     def setSQL(self, sql):
         self._SQL = sql
+        return self
 
     '''
     功能：打印SQL
