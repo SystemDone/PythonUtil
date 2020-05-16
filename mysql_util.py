@@ -232,7 +232,7 @@ class MysqlUtil(object):
     功能：拼接table，调用执行sql的方法，重置内部数据
     返回值：SQL运行结果
     '''
-    def excute(self):
+    def excute(self, printsql=False):
         if self._tableName != '':
             # 拼接表名
             self._SQL = (self._SQL + self._query).format(table=self._tableName)
@@ -240,8 +240,9 @@ class MysqlUtil(object):
         self._SQL = self._SQL.replace('None', 'NULL')
         self._SQL = self._SQL.replace('False', 'false')
         self._SQL = self._SQL.replace('True', 'true')
-        # 打印SQL
-        self.printSql()
+        if printsql:
+            # 打印SQL
+            self.printSql()
         # 执行SQL，inster或update或delete返回影响行数，select返回查询到的数据集合
         obj = self._excute()
         # 重置内部数据
